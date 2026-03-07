@@ -29,6 +29,21 @@ type RestaurantContextType = {
     selectedSize?: string,
   ) => void;
   calculateTotal: (order: Order) => number;
+  increaseQuantity: (
+    orderId: number,
+    menuItemId: number,
+    selectedSize?: string,
+  ) => void;
+  decreaseQuantity: (
+    orderId: number,
+    menuItemId: number,
+    selectedSize?: string,
+  ) => void;
+  removeItem: (
+    orderId: number,
+    menuItemId: number,
+    selectedSize?: string,
+  ) => void;
 };
 
 /* ================= CONTEXT ================= */
@@ -108,6 +123,64 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const increaseQuantity = (
+    orderId: number,
+    menuItemId: number,
+    selectedSize?: string,
+  ) => {
+    addItemToOrder(orderId, menuItemId, selectedSize);
+  };
+
+  const decreaseQuantity = (
+    orderId: number,
+    menuItemId: number,
+    selectedSize?: string,
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== orderId) return order;
+
+        return {
+          ...order,
+          items: order.items
+            .map((item) => {
+              if (
+                item.menuItemId === menuItemId &&
+                item.selectedSize === selectedSize
+              ) {
+                return { ...item, quantity: item.quantity - 1 };
+              }
+              return item;
+            })
+            .filter((item) => item.quantity > 0),
+        };
+      }),
+    );
+  };
+
+  const removeItem = (
+    orderId: number,
+    menuItemId: number,
+    selectedSize?: string,
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== orderId) return order;
+
+        return {
+          ...order,
+          items: order.items.filter(
+            (item) =>
+              !(
+                item.menuItemId === menuItemId &&
+                item.selectedSize === selectedSize
+              ),
+          ),
+        };
+      }),
+    );
+  };
+
   /* ========= CALCULATE TOTAL ========= */
 
   const calculateTotal = (order: Order): number => {
@@ -153,6 +226,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         markAsPaid,
         addItemToOrder,
         calculateTotal,
+        increaseQuantity,
+        decreaseQuantity,
+        removeItem,
       }}
     >
       {children}

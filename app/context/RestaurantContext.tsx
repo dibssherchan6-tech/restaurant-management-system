@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { menu, MenuItem } from "../data/menu";
+import { useEffect } from "react";
 
 /* ================= TYPES ================= */
 
@@ -12,7 +13,7 @@ type OrderItem = {
 };
 
 type Order = {
-  id: number;
+  id: string;
   tableId: number;
   customerCount: number;
   status: "open" | "paid";
@@ -22,28 +23,33 @@ type Order = {
 type RestaurantContextType = {
   orders: Order[];
   createOrder: (tableId: number, customerCount: number) => void;
-  markAsPaid: (orderId: number) => void;
+  markAsPaid: (orderId: string) => void;
+
   addItemToOrder: (
-    orderId: number,
+    orderId: string,
     menuItemId: number,
     selectedSize?: string,
   ) => void;
-  calculateTotal: (order: Order) => number;
+
   increaseQuantity: (
-    orderId: number,
+    orderId: string,
     menuItemId: number,
     selectedSize?: string,
   ) => void;
+
   decreaseQuantity: (
-    orderId: number,
+    orderId: string,
     menuItemId: number,
     selectedSize?: string,
   ) => void;
+
   removeItem: (
-    orderId: number,
+    orderId: string,
     menuItemId: number,
     selectedSize?: string,
   ) => void;
+
+  calculateTotal: (order: Order) => number;
 };
 
 /* ================= CONTEXT ================= */
@@ -53,9 +59,23 @@ const RestaurantContext = createContext<RestaurantContextType | null>(null);
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
 
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch("/api/orders");
+        const data = await res.json();
+        setOrders(data);
+      } catch (error) {
+        console.error("Failed to fetch orders");
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
   /* ========= CREATE ORDER ========= */
 
-  const createOrder = (tableId: number, customerCount: number) => {
+  const createOrder = async (tableId: number, customerCount: number) => {
     const openOrdersForTable = orders.filter(
       (order) => order.tableId === tableId && order.status === "open",
     );
@@ -65,25 +85,51 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const newOrder: Order = {
-      id: Date.now(),
-      tableId,
-      customerCount,
-      status: "open",
-      items: [],
-    };
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          customerCount,
+          status: "open",
+          items: [],
+        }),
+      });
 
-    setOrders((prev) => [...prev, newOrder]);
+      const data = await res.json();
+
+      setOrders((prev) => [...prev, data]);
+    } catch (error) {
+      alert("Failed to create order");
+    }
   };
 
   /* ========= MARK AS PAID ========= */
 
-  const markAsPaid = (orderId: number) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: "paid" } : order,
-      ),
-    );
+  const markAsPaid = async (orderId: string) => {
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+          updates: { status: "paid" },
+        }),
+      });
+
+      const updatedOrder = await res.json();
+
+      setOrders((prev) =>
+        prev.map((order) => (order.id === orderId ? updatedOrder : order)),
+      );
+    } catch (error) {
+      alert("Failed to update order");
+    }
   };
 
   /* ========= ADD ITEM ========= */

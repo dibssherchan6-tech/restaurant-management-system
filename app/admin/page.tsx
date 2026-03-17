@@ -8,6 +8,14 @@ export default function AdminPage() {
 
   const openOrders = orders.filter((order) => order.status === "open");
 
+  const getMenuItem = (menuItemId: number) => {
+    for (const category of menu) {
+      const item = category.items.find((i) => i.id === menuItemId);
+      if (item) return item;
+    }
+    return null;
+  };
+
   return (
     <div className="p-10">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
@@ -23,7 +31,16 @@ export default function AdminPage() {
           <div className="mt-3">
             {order.items.map((item, index) => (
               <p key={index}>
-                Item #{item.menuItemId}
+                {(() => {
+                  const menuItem = getMenuItem(item.menuItemId);
+                  return (
+                    <>
+                      {menuItem?.name}
+                      {item.selectedSize && ` (${item.selectedSize})`} x{" "}
+                      {item.quantity}
+                    </>
+                  );
+                })()}
                 {item.selectedSize && ` (${item.selectedSize})`} x{" "}
                 {item.quantity}
               </p>

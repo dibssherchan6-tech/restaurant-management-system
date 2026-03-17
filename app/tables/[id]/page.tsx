@@ -21,7 +21,7 @@ export default function TableDetailPage() {
   const tableId = Number(params.id);
 
   const [customerCount, setCustomerCount] = useState(1);
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const openOrders = orders.filter(
     (order) => order.tableId === tableId && order.status === "open",
